@@ -2,143 +2,1187 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>J&T Express Manager</title>
-  <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIko8VCBFeHByZXNzIE1hbmFnZXIiLAogICJzaG9ydF9uYW1lIjogIko8VCBBcHAiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZmZmZmYiLAogICJ0aGVtZV9jb2xvciI6ICIjZTMwNjEzIgogfQ==">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>J&T Express Manager - Sistema de Gestão de Rota e Baixas</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              red: '#E60012', // Cor vibrante modelo J&T
+              redDark: '#B8000E',
+              darkBg: '#0F172A',
+              cardDark: '#1E293B',
+              borderDark: '#334155'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #f4f5f7; color: #333; padding-bottom: 30px; }
-    header { background-color: #e30613; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 1.2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .container { padding: 15px; max-width: 600px; margin: 0 auto; }
-    .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    h2 { font-size: 1.1rem; margin-bottom: 12px; color: #111; }
-    label { font-size: 0.85rem; font-weight: 600; color: #666; display: block; margin-top: 10px; margin-bottom: 4px; }
-    input, select, textarea, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; outline: none; }
-    input:focus, select:focus { border-color: #e30613; }
-    .btn-primary { background-color: #e30613; color: white; border: none; font-weight: bold; margin-top: 15px; cursor: pointer; }
-    .btn-primary:active { background-color: #b8040f; }
-    .delivery-item { border-left: 4px solid #e30613; padding: 10px; margin-top: 10px; background: #fafafa; border-radius: 0 8px 8px 0; }
-    .delivery-item h3 { font-size: 1rem; }
-    .delivery-item p { font-size: 0.85rem; color: #555; margin-top: 2px; }
-    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; color: white; margin-top: 5px; }
-    .badge-direta { background-color: #28a745; }
-    .badge-armario { background-color: #17a2b8; }
-    .badge-porter { background-color: #ffc107; color: #000; }
-    .photo-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-top: 10px; display: none; }
+    /* Estilos personalizados para rolagens e interações */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.05);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100,116,139,0.3);
+      border-radius: 9999px;
+    }
+    .modal-active {
+      overflow: hidden;
+    }
+    .tap-highlight-transparent {
+      -webkit-tap-highlight-color: transparent;
+    }
   </style>
 </head>
-<body>
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen font-sans transition-colors duration-200 pb-20 md:pb-10">
 
-  <header>🚚 J&T Express Manager</header>
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
 
-  <div class="container">
-    <div class="card">
-      <h2>📦 Registrar Nova Entrega</h2>
-      <form id="deliveryForm">
-        <label for="address">Endereço / Prédio / Apto:</label>
-        <input type="text" id="address" placeholder="Ex: R. das Flores, 123 - Apto 402" required>
+  <!-- Header / Barra Superior com Alternador de Visão -->
+  <header class="sticky top-0 z-40 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+      
+      <!-- LOGO E TITULO -->
+      <div class="flex items-center gap-3 w-full sm:w-auto justify-between">
+        <div class="flex items-center gap-2">
+          <div class="bg-brand-red text-white p-2 rounded-xl shadow-md font-bold text-lg leading-none">
+            J&T
+          </div>
+          <div>
+            <h1 class="font-bold text-base md:text-lg leading-tight tracking-tight text-slate-900 dark:text-white">
+              Rota & Baixas <span class="text-xs bg-red-100 text-brand-red dark:bg-red-950 dark:text-red-300 font-semibold px-2 py-0.5 rounded-full ml-1">PRO</span>
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Entregas Inteligentes</p>
+          </div>
+        </div>
 
-        <label for="type">Tipo de Entrega:</label>
-        <select id="type">
-          <option value="Direta">Direct to Resident / Shop</option>
-          <option value="Armário">Electronic Locker</option>
-          <option value="Porter">Porter / Portaria</option>
+        <!-- Botão de Tema (Modo Escuro / Claro) para Mobile -->
+        <button id="theme-toggle" class="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg text-sm bg-slate-100 dark:bg-slate-700/50">
+          <i class="fa-solid fa-moon dark:hidden"></i>
+          <i class="fa-solid fa-sun hidden dark:inline"></i>
+        </button>
+      </div>
+
+      <!-- ALTERNADOR DE PERFIL / MODO DA APLICAÇÃO -->
+      <div class="w-full sm:w-auto flex items-center justify-center">
+        <div class="bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 flex w-full sm:w-auto shadow-inner">
+          <button id="btn-mode-driver" onclick="switchViewMode('driver')" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all shadow-sm bg-brand-red text-white">
+            <i class="fa-solid fa-truck-fast text-sm"></i>
+            <span>Visão Entregador</span>
+          </button>
+          <button id="btn-mode-mother" onclick="switchViewMode('mother')" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
+            <i class="fa-solid fa-headset text-sm"></i>
+            <span>Painel da Mãe</span>
+            <span id="pending-baixa-badge" class="hidden bg-emerald-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- CONTAINER PRINCIPAL -->
+  <main class="max-w-5xl mx-auto px-4 py-6">
+
+    <!-- BARRA DE STATUS / RESUMO DO DIA -->
+    <section class="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/70 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-lg">
+          <i class="fa-solid fa-building"></i>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Prédios Rota</span>
+          <span id="stat-total-predios" class="text-lg font-extrabold text-slate-800 dark:text-slate-100">0</span>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/70 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-lg">
+          <i class="fa-solid fa-cubes-stacked"></i>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Peças Separadas</span>
+          <span id="stat-total-pecas" class="text-lg font-extrabold text-slate-800 dark:text-slate-100">0</span>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/70 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-lg">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Entregues</span>
+          <span id="stat-entregues" class="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">0</span>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/70 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-lg">
+          <i class="fa-solid fa-cloud-arrow-down"></i>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Baixadas J&T</span>
+          <span id="stat-baixadas" class="text-lg font-extrabold text-purple-600 dark:text-purple-400">0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAINEL SUPERIOR DE AÇÕES & BUSCA -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
+      
+      <!-- Busca de Prédio/Rua -->
+      <div class="relative flex-1">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="text" id="input-search" oninput="renderApp()" placeholder="Buscar por prédio, rua ou endereço..." class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-red dark:text-white shadow-sm">
+      </div>
+
+      <!-- Filtro por Status (Mãe / Entregador) -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+        <select id="filter-status" onchange="renderApp()" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs md:text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-red text-slate-700 dark:text-slate-200 shadow-sm font-medium">
+          <option value="ALL">Todos os Status</option>
+          <option value="PENDING_HOUSE">Em Separação (Casa)</option>
+          <option value="MONTINHO_READY">Montinho Pronto (Carro)</option>
+          <option value="DELIVERED">Entregues</option>
+          <option value="BAIXADO">Baixados pela Mãe</option>
+          <option value="FAILED">Problemas (Fechado/Recusado)</option>
         </select>
 
-        <label for="photoInput">📷 Tirar Foto do Pacote / Comprovante:</label>
-        <input type="file" id="photoInput" accept="image/*" capture="environment">
-        <img id="photoPreview" class="photo-preview" alt="Preview da Foto">
-
-        <button type="submit" class="btn-primary">Confirmar e Enviar</button>
-      </form>
+        <!-- Botão Novo Prédio (Visível no modo Entregador) -->
+        <button id="btn-add-building" onclick="openAddBuildingModal()" class="whitespace-nowrap bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>Novo Prédio</span>
+        </button>
+      </div>
     </div>
 
-    <div class="card">
-      <h2>📋 Entregas do Dia (Ao Vivo)</h2>
-      <div id="deliveryList">Carregando entregas...</div>
+    <!-- MENSAGEM / AVISO DA VISÃO MÃE (Banner Diferenciado) -->
+    <div id="mother-banner" class="hidden mb-6 bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-4 rounded-2xl shadow-lg border border-purple-700/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-purple-500/30 flex items-center justify-center text-xl text-purple-200 border border-purple-400/30">
+          <i class="fa-solid fa-user-shield"></i>
+        </div>
+        <div>
+          <h2 class="font-bold text-sm md:text-base">Painel da Mãe - Central de Baixa de Encomendas</h2>
+          <p class="text-xs text-purple-200">Acompanhe as fotos em tempo real e confirme a baixa do pacote no sistema J&T.</p>
+        </div>
+      </div>
+      <button onclick="batchBaixaAllDelivered()" class="w-full md:w-auto bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+        <i class="fa-solid fa-check-double"></i>
+        <span>Baixar Todos Concluídos</span>
+      </button>
+    </div>
+
+    <!-- LISTA DE CARDS DE PRÉDIOS (GRID PRINCIPAL) -->
+    <div id="buildings-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Injetado dinamicamente via JS -->
+    </div>
+
+    <!-- MENSAGEM QUANDO ESTÁ VAZIO -->
+    <div id="empty-state" class="hidden text-center py-12 bg-white dark:bg-slate-800 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 p-6 my-4">
+      <div class="w-16 h-16 bg-slate-100 dark:bg-slate-700/50 rounded-full flex items-center justify-center mx-auto text-slate-400 text-2xl mb-3">
+        <i class="fa-solid fa-box-open"></i>
+      </div>
+      <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-1">Nenhum prédio localizado</h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Tente ajustar seus termos de busca/filtro ou cadastre um novo prédio para a rota de hoje.</p>
+    </div>
+
+  </main>
+
+  <!-- ==================== MODAIS ==================== -->
+
+  <!-- MODAL 1: CADASTRAR NOVO PRÉDIO -->
+  <div id="modal-add-building" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-700">
+        <h3 class="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-building-circle-check text-brand-red"></i>
+          Cadastrar Novo Prédio
+        </h3>
+        <button onclick="closeModal('modal-add-building')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="form-add-building" onsubmit="handleSaveBuilding(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Nome do Prédio / Condomínio *</label>
+          <input type="text" id="new-b-name" required placeholder="Ex: Residencial Flores do Parque" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-red dark:text-white">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Rua e Número / Endereço Completo *</label>
+          <input type="text" id="new-b-address" required placeholder="Ex: Rua das Camélias, 450 - Bloco B" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-red dark:text-white">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Modelo de Recebimento do Prédio *</label>
+          <select id="new-b-type" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-red dark:text-white">
+            <option value="PORTEIRO">Porteiro Físico Humano</option>
+            <option value="ELETRONICA">Portaria Eletrônica / Armários / Box Lockers</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">URL da Foto da Fachada (Fixo) ou Escolher Pré-definida</label>
+          <div class="flex gap-2">
+            <input type="text" id="new-b-facade" placeholder="Cole URL de imagem ou escolha sugestão abaixo..." class="flex-1 px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs dark:text-white">
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1">Fotos sugeridas rápidas:</p>
+          <div class="flex gap-2 mt-1.5 overflow-x-auto pb-1">
+            <button type="button" onclick="setSampleFacade('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=500')" class="text-[10px] bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-lg">Prédio Espelhado</button>
+            <button type="button" onclick="setSampleFacade('https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=500')" class="text-[10px] bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-lg">Torre Moderna</button>
+            <button type="button" onclick="setSampleFacade('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=500')" class="text-[10px] bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-lg">Comercial Azul</button>
+          </div>
+        </div>
+
+        <div class="pt-2 flex gap-2 justify-end">
+          <button type="button" onclick="closeModal('modal-add-building')" class="px-4 py-2 rounded-xl text-slate-500 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-700">Cancelar</button>
+          <button type="submit" class="bg-brand-red hover:bg-brand-redDark text-white px-5 py-2 rounded-xl font-bold text-xs shadow-md">Salvar Prédio</button>
+        </div>
+      </form>
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+  <!-- MODAL 2: REGISTRO DE MONTINHO (CASA) -->
+  <div id="modal-montinho" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100 dark:border-slate-700">
+        <div>
+          <span class="text-[10px] font-bold text-brand-red uppercase tracking-wider">Etapa 1: Preparação em Casa</span>
+          <h3 id="montinho-building-title" class="font-bold text-lg text-slate-900 dark:text-white">Separar Montinho</h3>
+        </div>
+        <button onclick="closeModal('modal-montinho')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDxkRMpo2seMwa8l30Pi8tyKpZBgpUSNnI",
-      authDomain: "jt-express-app.firebaseapp.com",
-      projectId: "jt-express-app",
-      storageBucket: "jt-express-app.firebasestorage.app",
-      messagingSenderId: "90950378709",
-      appId: "1:90950378709:web:9f9fee6084aa99de77ae5c",
-      databaseURL: "https://jt-express-app-default-rtdb.firebaseio.com"
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Quantidade Total de Peças/Pacotes para este Prédio *</label>
+          <input type="number" id="montinho-count" min="1" value="1" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-bold text-slate-800 dark:text-white">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Fotos das Peças no Chão (Montinho)</label>
+          <p class="text-xs text-slate-500 mb-2">Simule ou selecione uma foto clara dos pacotes onde dê para visualizar os dados e contagem.</p>
+          
+          <!-- Seletor de fotos pré-definidas para facilidade no teste -->
+          <div class="grid grid-cols-3 gap-2 mb-3">
+            <button type="button" onclick="addMontinhoPhoto('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=500')" class="border-2 border-dashed border-slate-300 dark:border-slate-600 p-1.5 rounded-xl text-center hover:border-brand-red group">
+              <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=200" class="w-full h-14 object-cover rounded-lg mb-1">
+              <span class="text-[10px] font-medium block text-slate-600 dark:text-slate-300">Caixas Papelão</span>
+            </button>
+            <button type="button" onclick="addMontinhoPhoto('https://images.unsplash.com/photo-1566576721346-d4a3b4eaeb55?w=500')" class="border-2 border-dashed border-slate-300 dark:border-slate-600 p-1.5 rounded-xl text-center hover:border-brand-red group">
+              <img src="https://images.unsplash.com/photo-1566576721346-d4a3b4eaeb55?w=200" class="w-full h-14 object-cover rounded-lg mb-1">
+              <span class="text-[10px] font-medium block text-slate-600 dark:text-slate-300">Pacotes J&T</span>
+            </button>
+            <button type="button" onclick="addMontinhoPhoto('https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=500')" class="border-2 border-dashed border-slate-300 dark:border-slate-600 p-1.5 rounded-xl text-center hover:border-brand-red group">
+              <img src="https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=200" class="w-full h-14 object-cover rounded-lg mb-1">
+              <span class="text-[10px] font-medium block text-slate-600 dark:text-slate-300">Monte Misto</span>
+            </button>
+          </div>
+
+          <!-- URL Customizada -->
+          <div class="flex gap-2">
+            <input type="text" id="montinho-custom-photo" placeholder="Ou cole URL da foto tirada..." class="flex-1 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs dark:text-white">
+            <button type="button" onclick="addMontinhoCustomPhoto()" class="bg-slate-200 dark:bg-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200">Adicionar</button>
+          </div>
+        </div>
+
+        <!-- Lista de fotos adicionadas -->
+        <div>
+          <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Fotos Anexadas para o Montinho:</span>
+          <div id="montinho-photos-preview" class="flex gap-2 overflow-x-auto min-h-[70px] p-2 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <p class="text-xs text-slate-400 italic my-auto">Nenhuma foto adicionada ainda.</p>
+          </div>
+        </div>
+
+        <div class="pt-3 flex gap-2 justify-end">
+          <button type="button" onclick="closeModal('modal-montinho')" class="px-4 py-2 rounded-xl text-slate-500 font-semibold text-xs">Cancelar</button>
+          <button type="button" onclick="saveMontinho()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl font-bold text-xs shadow-md flex items-center gap-2">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>Confirmar Montinho no Carro</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: CONCLUIR ENTREGA NA PORTARIA / LOCAL -->
+  <div id="modal-delivery" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 max-h-[92vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100 dark:border-slate-700">
+        <div>
+          <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Etapa 2: Entrega na Rota</span>
+          <h3 id="delivery-building-title" class="font-bold text-lg text-slate-900 dark:text-white">Confirmar Entrega</h3>
+        </div>
+        <button onclick="closeModal('modal-delivery')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Pré-visualização Rápida das Fotos do Montinho para Conferência -->
+      <div class="mb-4 bg-amber-50 dark:bg-amber-950/40 p-3 rounded-2xl border border-amber-200 dark:border-amber-800/50">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-eye"></i> Conferência de Peças Separadas em Casa:
+          </span>
+          <span id="delivery-pecas-badge" class="bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 text-[10px] font-extrabold px-2 py-0.5 rounded-full">0 peças</span>
+        </div>
+        <div id="delivery-montinho-preview" class="flex gap-2 overflow-x-auto py-1">
+          <!-- Fotos renderizadas aqui -->
+        </div>
+      </div>
+
+      <!-- Escolha do Modal de Entrega -->
+      <div class="space-y-4">
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Qual a Situação / Tipo de Entrega no Prédio? *</label>
+          <select id="delivery-method" onchange="toggleDeliveryFields()" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-brand-red dark:text-white">
+            <option value="PORTEIRO">1. Entrega para Porteiro Cadastrado</option>
+            <option value="ELETRONICA">2. Portaria Eletrônica / Armário / Lockers (Exige 2 Fotos)</option>
+            <option value="MORADOR">3. Entregue Direto ao Morador / Cliente</option>
+            <option value="CLOSED">4. Prédio Sem Porteiro / Fechado (Tentativa Frustrada)</option>
+            <option value="REFUSED">5. Recusa pelo Morador / Devolução</option>
+          </select>
+        </div>
+
+        <!-- SEÇÃO PORTEIRO -->
+        <div id="field-porteiro-section" class="space-y-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-2xl border border-slate-200 dark:border-slate-700">
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-200">Selecione o Porteiro que recebeu:</label>
+          <div id="porteiro-list-radio" class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+            <!-- Dinâmico -->
+          </div>
+
+          <!-- Cadastrar novo porteiro rapidamente -->
+          <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
+            <p class="text-[11px] font-semibold text-slate-500 mb-1">Novo porteiro? Cadastre agora:</p>
+            <div class="flex gap-2">
+              <input type="text" id="new-porteiro-name" placeholder="Nome do novo porteiro..." class="flex-1 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs dark:text-white">
+              <button type="button" onclick="addNewPorteiroToCurrent()" class="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-3 py-1.5 rounded-xl text-xs font-bold">Cadastrar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEÇÃO PORTARIA ELETRÔNICA (REQUER 2 FOTOS) -->
+        <div id="field-eletronica-section" class="hidden space-y-3 bg-indigo-50 dark:bg-indigo-950/40 p-3.5 rounded-2xl border border-indigo-200 dark:border-indigo-800/50">
+          <p class="text-xs font-bold text-indigo-900 dark:text-indigo-300">Regra de Portaria Eletrônica: Tire as 2 fotos de confirmação obrigatórias</p>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">1. Foto da Peça/Pacote</span>
+              <div id="eletronica-photo1-preview" class="h-24 bg-white dark:bg-slate-800 rounded-xl border border-indigo-200 dark:border-indigo-800 flex items-center justify-center overflow-hidden">
+                <button type="button" onclick="setEletronicaPhoto(1)" class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">
+                  <i class="fa-solid fa-camera mr-1"></i> Simular Foto Peça
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">2. Foto do Box / Confirmação</span>
+              <div id="eletronica-photo2-preview" class="h-24 bg-white dark:bg-slate-800 rounded-xl border border-indigo-200 dark:border-indigo-800 flex items-center justify-center overflow-hidden">
+                <button type="button" onclick="setEletronicaPhoto(2)" class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">
+                  <i class="fa-solid fa-qrcode mr-1"></i> Simular Foto Box/Painel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEÇÃO MORADOR -->
+        <div id="field-morador-section" class="hidden space-y-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-2xl border border-slate-200 dark:border-slate-700">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Nome do Morador que recebeu *</label>
+            <input type="text" id="morador-name" placeholder="Ex: Maria da Silva" class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs dark:text-white">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Apartamento / Bloco *</label>
+            <input type="text" id="morador-apt" placeholder="Ex: Apto 402 - Bloco B" class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs dark:text-white">
+          </div>
+        </div>
+
+        <!-- SEÇÃO MOTIVO DE FALHA / RECUSA -->
+        <div id="field-failure-section" class="hidden space-y-2 bg-red-50 dark:bg-red-950/40 p-3 rounded-2xl border border-red-200 dark:border-red-800/50">
+          <label class="block text-xs font-bold text-red-800 dark:text-red-300 mb-1">Descreva o Motivo (Sem Porteiro / Fechado / Recusado) *</label>
+          <textarea id="failure-reason" rows="2" placeholder="Ex: Portaria fechada sem atendimento após 10min de espera..." class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-700 rounded-xl text-xs dark:text-white"></textarea>
+        </div>
+
+        <!-- Botão Final de Ação -->
+        <div class="pt-3 flex gap-2 justify-end">
+          <button type="button" onclick="closeModal('modal-delivery')" class="px-4 py-2 rounded-xl text-slate-500 font-semibold text-xs">Voltar</button>
+          <button type="button" onclick="saveDelivery()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-lg flex items-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>Confirmar Entrega do Prédio</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL 4: EXPANSÃO DE IMAGENS (ZOOM / VER DETALHES DAS FOTOS DA MÃE E ENTREGADOR) -->
+  <div id="modal-image-zoom" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex flex-col items-center justify-center p-4">
+    <button onclick="closeModal('modal-image-zoom')" class="absolute top-4 right-4 text-white hover:text-slate-300 text-2xl p-2 z-50">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <div class="max-w-4xl max-h-[85vh] flex items-center justify-center overflow-hidden rounded-2xl">
+      <img id="zoomed-image-target" src="" class="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl">
+    </div>
+    <p id="zoomed-image-caption" class="text-white text-xs mt-3 text-center font-medium bg-slate-800/80 px-4 py-1.5 rounded-full"></p>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC & STATE MANAGEMENT -->
+  <script>
+    // =========================================================================
+    // ESTADO INICIAL E DADOS DEMONSTRATIVOS (MOCK)
+    // =========================================================================
+
+    // Perfil Atual: 'driver' (Entregador) ou 'mother' (Mãe/Baixas)
+    let currentRole = 'driver';
+
+    // Lista principal de Prédios e Encomendas da Rota
+    let buildingsData = [
+      {
+        id: 'b1',
+        name: 'Residencial Solar das Palmeiras',
+        address: 'Rua das Palmeiras, 1020',
+        facadeUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600',
+        type: 'PORTEIRO', // PORTEIRO | ELETRONICA
+        porteiros: ['Seu Antônio (Manhã)', 'Sr. Carlos (Tarde)'],
+        status: 'DELIVERED', // PENDING_HOUSE | MONTINHO_READY | DELIVERED | BAIXADO | FAILED
+        montinho: {
+          pecasCount: 14,
+          photos: [
+            'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600',
+            'https://images.unsplash.com/photo-1566576721346-d4a3b4eaeb55?w=600'
+          ],
+          updatedAt: '08:15'
+        },
+        deliveryInfo: {
+          method: 'PORTEIRO',
+          receivedBy: 'Seu Antônio (Manhã)',
+          deliveredAt: '10:45',
+          photos: []
+        },
+        baixadoPorMae: false,
+        baixaTimestamp: null
+      },
+      {
+        id: 'b2',
+        name: 'Edifício Horizon Smart Living',
+        address: 'Av. Brigadeiro Faria, 450',
+        facadeUrl: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600',
+        type: 'ELETRONICA',
+        porteiros: [],
+        status: 'DELIVERED',
+        montinho: {
+          pecasCount: 8,
+          photos: [
+            'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=600'
+          ],
+          updatedAt: '08:30'
+        },
+        deliveryInfo: {
+          method: 'ELETRONICA',
+          photo1: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600',
+          photo2: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=600',
+          deliveredAt: '11:20'
+        },
+        baixadoPorMae: false,
+        baixaTimestamp: null
+      },
+      {
+        id: 'b3',
+        name: 'Condomínio Spazio Bellini',
+        address: 'Rua Augusta, 880',
+        facadeUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600',
+        type: 'PORTEIRO',
+        porteiros: ['Dona Marcia (Portaria)'],
+        status: 'MONTINHO_READY',
+        montinho: {
+          pecasCount: 22,
+          photos: [
+            'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600'
+          ],
+          updatedAt: '08:45'
+        },
+        deliveryInfo: null,
+        baixadoPorMae: false
+      },
+      {
+        id: 'b4',
+        name: 'Prédio Residencial Ouro Preto',
+        address: 'Rua São Paulo, 120',
+        facadeUrl: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600',
+        type: 'PORTEIRO',
+        porteiros: ['Seu Jorge'],
+        status: 'PENDING_HOUSE',
+        montinho: null,
+        deliveryInfo: null,
+        baixadoPorMae: false
+      }
+    ];
+
+    // Variáveis auxiliares de formulários
+    let selectedBuildingId = null;
+    let tempMontinhoPhotos = [];
+    let tempEletronicaPhoto1 = null;
+    let tempEletronicaPhoto2 = null;
+
+    // =========================================================================
+    // INICIALIZAÇÃO
+    // =========================================================================
+
+    window.onload = function() {
+      // Carrega dados salvos no localStorage se houver
+      const saved = localStorage.getItem('jt_express_data');
+      if (saved) {
+        try {
+          buildingsData = JSON.parse(saved);
+        } catch(e) { console.error("Erro ao carregar localStorage", e); }
+      }
+      renderApp();
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const deliveriesRef = ref(db, 'deliveries');
+    function saveData() {
+      localStorage.setItem('jt_express_data', JSON.stringify(buildingsData));
+      updateStats();
+    }
 
-    let currentPhotoBase64 = "";
+    // Toggle Dark Mode
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+    });
 
-    document.getElementById('photoInput').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          currentPhotoBase64 = evt.target.result;
-          const img = document.getElementById('photoPreview');
-          img.src = currentPhotoBase64;
-          img.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
+    // =========================================================================
+    // ALTERNAÇÃO DE PERFIL / MODO DA APLICAÇÃO
+    // =========================================================================
+
+    function switchViewMode(mode) {
+      currentRole = mode;
+      const btnDriver = document.getElementById('btn-mode-driver');
+      const btnMother = document.getElementById('btn-mode-mother');
+      const motherBanner = document.getElementById('mother-banner');
+      const btnAddBuilding = document.getElementById('btn-add-building');
+
+      if (mode === 'driver') {
+        btnDriver.className = "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all shadow-sm bg-brand-red text-white";
+        btnMother.className = "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white";
+        motherBanner.classList.add('hidden');
+        btnAddBuilding.classList.remove('hidden');
+        showToast("Modo Entregador Ativo! Gerencie montinhos e entregas.", "info");
+      } else {
+        btnMother.className = "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all shadow-sm bg-purple-700 text-white";
+        btnDriver.className = "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white";
+        motherBanner.classList.remove('hidden');
+        btnAddBuilding.classList.add('hidden');
+        showToast("Painel da Mãe Ativo! Verifique as entregas para dar baixa.", "info");
       }
-    });
 
-    document.getElementById('deliveryForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const address = document.getElementById('address').value;
-      const type = document.getElementById('type').value;
+      renderApp();
+    }
 
-      push(deliveriesRef, {
-        address: address,
-        type: type,
-        photo: currentPhotoBase64,
-        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-      }).then(() => {
-        document.getElementById('deliveryForm').reset();
-        document.getElementById('photoPreview').style.display = 'none';
-        currentPhotoBase64 = "";
-        alert("Entrega registrada com sucesso!");
-      }).catch((err) => {
-        alert("Erro ao registrar: " + err.message);
+    // =========================================================================
+    // RENDERIZAÇÃO DA INTERFACE PRINCIPAL
+    // =========================================================================
+
+    function renderApp() {
+      const container = document.getElementById('buildings-grid');
+      const emptyState = document.getElementById('empty-state');
+      const searchTerm = document.getElementById('input-search').value.toLowerCase().trim();
+      const statusFilter = document.getElementById('filter-status').value;
+
+      container.innerHTML = '';
+
+      // Filtragem dos dados
+      const filtered = buildingsData.filter(b => {
+        const matchesSearch = b.name.toLowerCase().includes(searchTerm) || b.address.toLowerCase().includes(searchTerm);
+        
+        let matchesStatus = true;
+        if (statusFilter === 'PENDING_HOUSE') matchesStatus = b.status === 'PENDING_HOUSE';
+        else if (statusFilter === 'MONTINHO_READY') matchesStatus = b.status === 'MONTINHO_READY';
+        else if (statusFilter === 'DELIVERED') matchesStatus = b.status === 'DELIVERED' && !b.baixadoPorMae;
+        else if (statusFilter === 'BAIXADO') matchesStatus = b.baixadoPorMae;
+        else if (statusFilter === 'FAILED') matchesStatus = b.status === 'FAILED';
+
+        return matchesSearch && matchesStatus;
       });
-    });
 
-    onValue(deliveriesRef, (snapshot) => {
-      const listDiv = document.getElementById('deliveryList');
-      listDiv.innerHTML = "";
-      const data = snapshot.val();
-      if (!data) {
-        listDiv.innerHTML = "<p style='color: #888;'>Nenhuma entrega registrada hoje.</p>";
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+        filtered.forEach(b => {
+          container.appendChild(createBuildingCardHTML(b));
+        });
+      }
+
+      updateStats();
+    }
+
+    // CRIAÇÃO DO CARD DE PRÉDIO
+    function createBuildingCardHTML(b) {
+      const card = document.createElement('div');
+      card.className = "bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col justify-between transition-all hover:shadow-md";
+
+      // Badge de Status
+      let statusBadge = '';
+      if (b.status === 'PENDING_HOUSE') {
+        statusBadge = `<span class="bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 text-[11px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-house mr-1"></i> Aguardando Separação</span>`;
+      } else if (b.status === 'MONTINHO_READY') {
+        statusBadge = `<span class="bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200 text-[11px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-boxes-packing mr-1"></i> Montinho no Carro (${b.montinho?.pecasCount || 0} pçs)</span>`;
+      } else if (b.status === 'DELIVERED' && !b.baixadoPorMae) {
+        statusBadge = `<span class="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[11px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-truck-ramp-box mr-1"></i> Entregue (Aguardando Baixa)</span>`;
+      } else if (b.baixadoPorMae) {
+        statusBadge = `<span class="bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 text-[11px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-circle-check mr-1"></i> Baixado na J&T</span>`;
+      } else if (b.status === 'FAILED') {
+        statusBadge = `<span class="bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 text-[11px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Problema / Fechado</span>`;
+      }
+
+      // Conteúdo principal do Card
+      let innerHTML = `
+        <div class="p-4 flex flex-col gap-3">
+          
+          <!-- Topo do Card: Fachada e Título -->
+          <div class="flex gap-3 items-start">
+            <div class="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
+              <img src="${b.facadeUrl || 'https://placehold.co/200x200?text=Fachada'}" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform" onclick="zoomImage('${b.facadeUrl}', 'Fachada Fixo: ${b.name}')">
+              <span class="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md font-medium">Fachada</span>
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <div class="mb-1">${statusBadge}</div>
+              <h3 class="font-bold text-base text-slate-900 dark:text-white truncate">${b.name}</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 truncate"><i class="fa-solid fa-location-dot text-brand-red mr-1"></i>${b.address}</p>
+              <div class="mt-2 flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300 font-medium">
+                <span class="bg-slate-100 dark:bg-slate-700/60 px-2 py-0.5 rounded-md">
+                  <i class="fa-solid ${b.type === 'PORTEIRO' ? 'fa-user-shield' : 'fa-robot'} text-xs mr-1"></i>
+                  ${b.type === 'PORTEIRO' ? 'Porteiro Físico' : 'Portaria Eletrônica'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SEÇÃO DE MONTINHO (CASA) -->
+          ${b.montinho ? `
+            <div class="bg-slate-50 dark:bg-slate-900/40 p-3 rounded-2xl border border-slate-200 dark:border-slate-700/60">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <i class="fa-solid fa-boxes-stacked text-amber-500"></i> Fotos do Montinho (${b.montinho.pecasCount} Peças):
+                </span>
+                <span class="text-[10px] text-slate-400">Sep. às ${b.montinho.updatedAt}</span>
+              </div>
+              
+              <!-- Miniaturas do montinho com clique para Zoom -->
+              <div class="flex gap-2 overflow-x-auto pb-1">
+                ${b.montinho.photos.map((photo, idx) => `
+                  <div class="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-slate-300 dark:border-slate-600 group cursor-pointer" onclick="zoomImage('${photo}', 'Montinho de Peças - ${b.name}')">
+                    <img src="${photo}" class="w-full h-full object-cover group-hover:scale-110 transition-transform">
+                    <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors flex items-center justify-center">
+                      <i class="fa-solid fa-magnifying-glass-plus text-white text-xs opacity-75"></i>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : `
+            <div class="bg-slate-50 dark:bg-slate-900/30 p-2.5 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700/60 text-center">
+              <span class="text-xs text-slate-400">Pendente de montinho em casa</span>
+            </div>
+          `}
+
+          <!-- SEÇÃO DE DETALHES DA ENTREGA (QUANDO CONCLUÍDA) -->
+          ${b.deliveryInfo ? `
+            <div class="bg-emerald-50 dark:bg-emerald-950/30 p-3 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 text-xs">
+              <div class="font-bold text-emerald-900 dark:text-emerald-300 flex items-center justify-between mb-1">
+                <span><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i> Detalhes da Entrega:</span>
+                <span class="text-[10px] text-emerald-700 dark:text-emerald-400 font-normal">Entregue às ${b.deliveryInfo.deliveredAt}</span>
+              </div>
+
+              ${b.deliveryInfo.method === 'PORTEIRO' ? `<p class="text-slate-700 dark:text-slate-300"><strong>Recebedor:</strong> Porteiro ${b.deliveryInfo.receivedBy}</p>` : ''}
+              ${b.deliveryInfo.method === 'MORADOR' ? `<p class="text-slate-700 dark:text-slate-300"><strong>Recebedor:</strong> Morador ${b.deliveryInfo.receivedBy} (${b.deliveryInfo.apt})</p>` : ''}
+              
+              ${b.deliveryInfo.method === 'ELETRONICA' ? `
+                <p class="text-slate-700 dark:text-slate-300 mb-1.5"><strong>Método:</strong> Portaria Eletrônica / Box com Fotos:</p>
+                <div class="flex gap-2">
+                  <img src="${b.deliveryInfo.photo1}" onclick="zoomImage('${b.deliveryInfo.photo1}', 'Foto Pacote Eletrônico')" class="w-14 h-14 object-cover rounded-xl border border-emerald-300 cursor-pointer">
+                  <img src="${b.deliveryInfo.photo2}" onclick="zoomImage('${b.deliveryInfo.photo2}', 'Foto Confirmador Box/Painel')" class="w-14 h-14 object-cover rounded-xl border border-emerald-300 cursor-pointer">
+                </div>
+              ` : ''}
+
+              ${b.deliveryInfo.reason ? `<p class="text-red-600 dark:text-red-400 font-semibold mt-1"><strong>Ocorrência:</strong> ${b.deliveryInfo.reason}</p>` : ''}
+            </div>
+          ` : ''}
+
+        </div>
+
+        <!-- RODAPÉ DE AÇÕES DO CARD (VARIA SEGUNDO O PERFIL MÃE/ENTREGADOR) -->
+        <div class="p-3 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2">
+      `;
+
+      // BOTÕES MODO ENTREGADOR
+      if (currentRole === 'driver') {
+        if (b.status === 'PENDING_HOUSE') {
+          innerHTML += `
+            <button onclick="openMontinhoModal('${b.id}')" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow transition-all flex items-center justify-center gap-2">
+              <i class="fa-solid fa-camera"></i>
+              <span>Tirar Foto e Separar Montinho</span>
+            </button>
+          `;
+        } else if (b.status === 'MONTINHO_READY') {
+          innerHTML += `
+            <button onclick="openMontinhoModal('${b.id}')" class="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white px-2 py-1">
+              <i class="fa-solid fa-pen"></i> Editar
+            </button>
+            <button onclick="openDeliveryModal('${b.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 flex-1">
+              <i class="fa-solid fa-truck-ramp-box"></i>
+              <span>Realizar Entrega no Prédio</span>
+            </button>
+          `;
+        } else {
+          innerHTML += `
+            <span class="text-xs text-slate-400 font-medium italic"><i class="fa-solid fa-lock mr-1"></i> Entrega Concluída</span>
+            <button onclick="openDeliveryModal('${b.id}')" class="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white underline">Revisar</button>
+          `;
+        }
+      } 
+      // BOTÕES MODO MÃE (CENTRAL DE BAIXAS)
+      else if (currentRole === 'mother') {
+        if (b.status === 'DELIVERED' || b.status === 'FAILED') {
+          if (b.baixadoPorMae) {
+            innerHTML += `
+              <span class="text-xs text-purple-600 dark:text-purple-400 font-bold flex items-center gap-1">
+                <i class="fa-solid fa-check-double"></i> Baixado no Sistema J&T
+              </span>
+              <button onclick="toggleBaixaMae('${b.id}', false)" class="text-[11px] text-slate-400 hover:text-slate-600 underline">Desfazer</button>
+            `;
+          } else {
+            innerHTML += `
+              <div class="w-full flex items-center justify-between gap-2">
+                <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 animate-pulse">Pronto p/ Baixa</span>
+                <button onclick="toggleBaixaMae('${b.id}', true)" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-2 px-4 rounded-xl shadow-md transition-all flex items-center gap-1.5">
+                  <i class="fa-solid fa-cloud-arrow-down"></i>
+                  <span>Confirmar Baixa na J&T</span>
+                </button>
+              </div>
+            `;
+          }
+        } else {
+          innerHTML += `
+            <span class="text-xs text-slate-400 italic">Aguardando motorista realizar entrega no local...</span>
+          `;
+        }
+      }
+
+      innerHTML += `</div>`;
+      card.innerHTML = innerHTML;
+      return card;
+    }
+
+    // =========================================================================
+    // LÓGICA DE MODAIS E AÇÕES DE FLUXO
+    // =========================================================================
+
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+      document.body.classList.add('modal-active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+      document.body.classList.remove('modal-active');
+    }
+
+    // --- CADASTRAR NOVO PRÉDIO ---
+    function openAddBuildingModal() {
+      document.getElementById('form-add-building').reset();
+      openModal('modal-add-building');
+    }
+
+    function setSampleFacade(url) {
+      document.getElementById('new-b-facade').value = url;
+    }
+
+    function handleSaveBuilding(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-b-name').value.trim();
+      const address = document.getElementById('new-b-address').value.trim();
+      const type = document.getElementById('new-b-type').value;
+      let facadeUrl = document.getElementById('new-b-facade').value.trim();
+
+      if (!facadeUrl) {
+        facadeUrl = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600';
+      }
+
+      const newB = {
+        id: 'b_' + Date.now(),
+        name,
+        address,
+        facadeUrl,
+        type,
+        porteiros: type === 'PORTEIRO' ? ['Porteiro Padrão'] : [],
+        status: 'PENDING_HOUSE',
+        montinho: null,
+        deliveryInfo: null,
+        baixadoPorMae: false
+      };
+
+      buildingsData.unshift(newB);
+      saveData();
+      closeModal('modal-add-building');
+      renderApp();
+      showToast("Novo prédio cadastrado com sucesso!", "success");
+    }
+
+    // --- MONTINHO EM CASA ---
+    function openMontinhoModal(buildingId) {
+      selectedBuildingId = buildingId;
+      const b = buildingsData.find(x => x.id === buildingId);
+      if (!b) return;
+
+      document.getElementById('montinho-building-title').innerText = b.name;
+      document.getElementById('montinho-count').value = b.montinho ? b.montinho.pecasCount : 1;
+      
+      tempMontinhoPhotos = b.montinho ? [...b.montinho.photos] : [];
+      renderMontinhoPhotosPreview();
+
+      openModal('modal-montinho');
+    }
+
+    function addMontinhoPhoto(url) {
+      tempMontinhoPhotos.push(url);
+      renderMontinhoPhotosPreview();
+    }
+
+    function addMontinhoCustomPhoto() {
+      const input = document.getElementById('montinho-custom-photo');
+      if (input.value.trim()) {
+        tempMontinhoPhotos.push(input.value.trim());
+        input.value = '';
+        renderMontinhoPhotosPreview();
+      }
+    }
+
+    function removeMontinhoPhoto(index) {
+      tempMontinhoPhotos.splice(index, 1);
+      renderMontinhoPhotosPreview();
+    }
+
+    function renderMontinhoPhotosPreview() {
+      const container = document.getElementById('montinho-photos-preview');
+      if (tempMontinhoPhotos.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 italic my-auto">Nenhuma foto adicionada ainda.</p>`;
         return;
       }
 
-      Object.values(data).reverse().forEach(item => {
-        let badgeClass = 'badge-direta';
-        if (item.type === 'Armário') badgeClass = 'badge-armario';
-        if (item.type === 'Porter') badgeClass = 'badge-porter';
+      container.innerHTML = tempMontinhoPhotos.map((url, i) => `
+        <div class="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-slate-300 dark:border-slate-600">
+          <img src="${url}" class="w-full h-full object-cover">
+          <button type="button" onclick="removeMontinhoPhoto(${i})" class="absolute top-0 right-0 bg-red-600 text-white text-[10px] w-4 h-4 rounded-bl flex items-center justify-center">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      `).join('');
+    }
 
-        let imgHtml = item.photo ? `<img src="${item.photo}" style="width:100%; border-radius:6px; margin-top:8px;">` : '';
+    function saveMontinho() {
+      const b = buildingsData.find(x => x.id === selectedBuildingId);
+      if (!b) return;
 
-        listDiv.innerHTML += `
-          <div class="delivery-item">
-            <h3>${item.address}</h3>
-            <p>Horário: ${item.timestamp}</p>
-            <span class="badge ${badgeClass}">${item.type}</span>
-            ${imgHtml}
-          </div>
-        `;
+      const count = parseInt(document.getElementById('montinho-count').value) || 1;
+
+      if (tempMontinhoPhotos.length === 0) {
+        // Se não colocar foto, coloca uma padrão para teste
+        tempMontinhoPhotos.push('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600');
+      }
+
+      const now = new Date();
+      const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+
+      b.montinho = {
+        pecasCount: count,
+        photos: tempMontinhoPhotos,
+        updatedAt: timeStr
+      };
+      b.status = 'MONTINHO_READY';
+
+      saveData();
+      closeModal('modal-montinho');
+      renderApp();
+      showToast(`Montinho do ${b.name} registrado no carro!`, "success");
+    }
+
+    // --- ENTREGAS NO LOCAL ---
+    function openDeliveryModal(buildingId) {
+      selectedBuildingId = buildingId;
+      const b = buildingsData.find(x => x.id === buildingId);
+      if (!b) return;
+
+      document.getElementById('delivery-building-title').innerText = b.name;
+      document.getElementById('delivery-pecas-badge').innerText = `${b.montinho?.pecasCount || 0} Peças no Montinho`;
+
+      // Renderiza fotos do montinho para conferência visual do entregador
+      const previewBox = document.getElementById('delivery-montinho-preview');
+      if (b.montinho && b.montinho.photos) {
+        previewBox.innerHTML = b.montinho.photos.map(p => `
+          <img src="${p}" onclick="zoomImage('${p}', 'Conferência Montinho')" class="w-14 h-14 object-cover rounded-xl border border-amber-300 dark:border-amber-700 cursor-pointer shrink-0">
+        `).join('');
+      } else {
+        previewBox.innerHTML = `<span class="text-xs text-slate-400">Sem foto registrada</span>`;
+      }
+
+      // Preenche lista de porteiros cadastrados
+      renderPorteirosList(b);
+
+      // Reseta simulação de fotos eletrônicas
+      tempEletronicaPhoto1 = null;
+      tempEletronicaPhoto2 = null;
+      resetEletronicaPhotosUI();
+
+      toggleDeliveryFields();
+      openModal('modal-delivery');
+    }
+
+    function renderPorteirosList(b) {
+      const container = document.getElementById('porteiro-list-radio');
+      if (!b.porteiros || b.porteiros.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 italic">Nenhum porteiro cadastrado ainda.</p>`;
+        return;
+      }
+
+      container.innerHTML = b.porteiros.map((pName, idx) => `
+        <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer">
+          <input type="radio" name="porteiro-selected" value="${pName}" ${idx === 0 ? 'checked' : ''} class="text-brand-red focus:ring-brand-red">
+          <span class="font-medium">${pName}</span>
+        </label>
+      `).join('');
+    }
+
+    function addNewPorteiroToCurrent() {
+      const input = document.getElementById('new-porteiro-name');
+      const val = input.value.trim();
+      if (!val) return;
+
+      const b = buildingsData.find(x => x.id === selectedBuildingId);
+      if (b) {
+        if (!b.porteiros) b.porteiros = [];
+        b.porteiros.push(val);
+        input.value = '';
+        renderPorteirosList(b);
+        saveData();
+        showToast("Novo porteiro cadastrado com sucesso!", "success");
+      }
+    }
+
+    function toggleDeliveryFields() {
+      const method = document.getElementById('delivery-method').value;
+      const porteiroSec = document.getElementById('field-porteiro-section');
+      const eletronicaSec = document.getElementById('field-eletronica-section');
+      const moradorSec = document.getElementById('field-morador-section');
+      const failureSec = document.getElementById('field-failure-section');
+
+      porteiroSec.classList.add('hidden');
+      eletronicaSec.classList.add('hidden');
+      moradorSec.classList.add('hidden');
+      failureSec.classList.add('hidden');
+
+      if (method === 'PORTEIRO') porteiroSec.classList.remove('hidden');
+      else if (method === 'ELETRONICA') eletronicaSec.classList.remove('hidden');
+      else if (method === 'MORADOR') moradorSec.classList.remove('hidden');
+      else if (method === 'CLOSED' || method === 'REFUSED') failureSec.classList.remove('hidden');
+    }
+
+    function setEletronicaPhoto(num) {
+      if (num === 1) {
+        tempEletronicaPhoto1 = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600';
+        document.getElementById('eletronica-photo1-preview').innerHTML = `<img src="${tempEletronicaPhoto1}" class="w-full h-full object-cover">`;
+      } else {
+        tempEletronicaPhoto2 = 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=600';
+        document.getElementById('eletronica-photo2-preview').innerHTML = `<img src="${tempEletronicaPhoto2}" class="w-full h-full object-cover">`;
+      }
+    }
+
+    function resetEletronicaPhotosUI() {
+      document.getElementById('eletronica-photo1-preview').innerHTML = `
+        <button type="button" onclick="setEletronicaPhoto(1)" class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">
+          <i class="fa-solid fa-camera mr-1"></i> Simular Foto Peça
+        </button>`;
+      document.getElementById('eletronica-photo2-preview').innerHTML = `
+        <button type="button" onclick="setEletronicaPhoto(2)" class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">
+          <i class="fa-solid fa-qrcode mr-1"></i> Simular Foto Box/Painel
+        </button>`;
+    }
+
+    function saveDelivery() {
+      const b = buildingsData.find(x => x.id === selectedBuildingId);
+      if (!b) return;
+
+      const method = document.getElementById('delivery-method').value;
+      const now = new Date();
+      const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+
+      if (method === 'PORTEIRO') {
+        const selectedRadio = document.querySelector('input[name="porteiro-selected"]:checked');
+        const receivedBy = selectedRadio ? selectedRadio.value : 'Porteiro Desconhecido';
+
+        b.deliveryInfo = { method: 'PORTEIRO', receivedBy, deliveredAt: timeStr };
+        b.status = 'DELIVERED';
+      } 
+      else if (method === 'ELETRONICA') {
+        if (!tempEletronicaPhoto1 || !tempEletronicaPhoto2) {
+          showToast("Atenção: A Portaria Eletrônica exige a foto do pacote e do box!", "warning");
+          return;
+        }
+        b.deliveryInfo = { method: 'ELETRONICA', photo1: tempEletronicaPhoto1, photo2: tempEletronicaPhoto2, deliveredAt: timeStr };
+        b.status = 'DELIVERED';
+      } 
+      else if (method === 'MORADOR') {
+        const name = document.getElementById('morador-name').value.trim();
+        const apt = document.getElementById('morador-apt').value.trim();
+
+        if (!name) {
+          showToast("Por favor, preencha o nome do morador.", "warning");
+          return;
+        }
+        b.deliveryInfo = { method: 'MORADOR', receivedBy: name, apt: apt || 'Apto N/I', deliveredAt: timeStr };
+        b.status = 'DELIVERED';
+      } 
+      else if (method === 'CLOSED' || method === 'REFUSED') {
+        const reason = document.getElementById('failure-reason').value.trim();
+        b.deliveryInfo = { method, reason: reason || (method === 'CLOSED' ? 'Prédio Sem Porteiro/Fechado' : 'Recusado pelo Morador'), deliveredAt: timeStr };
+        b.status = 'FAILED';
+      }
+
+      saveData();
+      closeModal('modal-delivery');
+      renderApp();
+      showToast("Entrega atualizada com sucesso! Fotos prontas para a mãe.", "success");
+    }
+
+    // --- AÇÕES DA MÃE (BAIXAS) ---
+    function toggleBaixaMae(buildingId, status) {
+      const b = buildingsData.find(x => x.id === buildingId);
+      if (!b) return;
+
+      b.baixadoPorMae = status;
+      b.baixaTimestamp = status ? new Date().toISOString() : null;
+
+      saveData();
+      renderApp();
+
+      if (status) {
+        showToast(`Baixa confirmada na J&T para ${b.name}!`, "success");
+      } else {
+        showToast("Baixa desfeita.", "info");
+      }
+    }
+
+    function batchBaixaAllDelivered() {
+      let count = 0;
+      buildingsData.forEach(b => {
+        if ((b.status === 'DELIVERED' || b.status === 'FAILED') && !b.baixadoPorMae) {
+          b.baixadoPorMae = true;
+          b.baixaTimestamp = new Date().toISOString();
+          count++;
+        }
       });
-    });
+
+      if (count > 0) {
+        saveData();
+        renderApp();
+        showToast(`${count} entregas baixadas de uma só vez com sucesso!`, "success");
+      } else {
+        showToast("Nenhuma entrega pendente para baixar.", "info");
+      }
+    }
+
+    // --- ZOOM DE IMAGEM ---
+    function zoomImage(url, caption) {
+      document.getElementById('zoomed-image-target').src = url;
+      document.getElementById('zoomed-image-caption').innerText = caption || 'Visualização em Alta Definição';
+      openModal('modal-image-zoom');
+    }
+
+    // --- ATUALIZAÇÃO DE ESTATÍSTICAS ---
+    function updateStats() {
+      const totalPredios = buildingsData.length;
+      const totalPecas = buildingsData.reduce((acc, b) => acc + (b.montinho?.pecasCount || 0), 0);
+      const entregues = buildingsData.filter(b => b.status === 'DELIVERED' || b.status === 'FAILED').length;
+      const baixadas = buildingsData.filter(b => b.baixadoPorMae).length;
+
+      document.getElementById('stat-total-predios').innerText = totalPredios;
+      document.getElementById('stat-total-pecas').innerText = totalPecas;
+      document.getElementById('stat-entregues').innerText = entregues;
+      document.getElementById('stat-baixadas').innerText = baixadas;
+
+      // Badge pendente na aba mãe
+      const pendingBaixaCount = buildingsData.filter(b => (b.status === 'DELIVERED' || b.status === 'FAILED') && !b.baixadoPorMae).length;
+      const badge = document.getElementById('pending-baixa-badge');
+      if (pendingBaixaCount > 0) {
+        badge.innerText = pendingBaixaCount;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    // --- SISTEMA DE TOAST NOTIFICATIONS ---
+    function showToast(message, type = "info") {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+
+      let bgClass = "bg-slate-800 text-white";
+      let icon = "fa-circle-info text-blue-400";
+
+      if (type === "success") {
+        bgClass = "bg-emerald-900/90 text-emerald-100 border border-emerald-700";
+        icon = "fa-circle-check text-emerald-400";
+      } else if (type === "warning") {
+        bgClass = "bg-amber-900/90 text-amber-100 border border-amber-700";
+        icon = "fa-triangle-exclamation text-amber-400";
+      }
+
+      toast.className = `${bgClass} p-3.5 rounded-2xl shadow-xl flex items-center gap-3 text-xs font-semibold backdrop-blur-md transition-all transform translate-y-2 opacity-0 pointer-events-auto`;
+      toast.innerHTML = `
+        <i class="fa-solid ${icon} text-base"></i>
+        <span class="flex-1">${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 50);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
   </script>
 </body>
 </html>
