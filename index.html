@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>J&T Express Manager</title>
+  <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIko8VCBFeHByZXNzIE1hbmFnZXIiLAogICJzaG9ydF9uYW1lIjogIko8VCBBcHAiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZmZmZmYiLAogICJ0aGVtZV9jb2xvciI6ICIjZTMwNjEzIgogfQ==">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f4f5f7; color: #333; padding-bottom: 30px; }
+    header { background-color: #e30613; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 1.2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .container { padding: 15px; max-width: 600px; margin: 0 auto; }
+    .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    h2 { font-size: 1.1rem; margin-bottom: 12px; color: #111; }
+    label { font-size: 0.85rem; font-weight: 600; color: #666; display: block; margin-top: 10px; margin-bottom: 4px; }
+    input, select, textarea, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; outline: none; }
+    input:focus, select:focus { border-color: #e30613; }
+    .btn-primary { background-color: #e30613; color: white; border: none; font-weight: bold; margin-top: 15px; cursor: pointer; }
+    .btn-primary:active { background-color: #b8040f; }
+    .delivery-item { border-left: 4px solid #e30613; padding: 10px; margin-top: 10px; background: #fafafa; border-radius: 0 8px 8px 0; }
+    .delivery-item h3 { font-size: 1rem; }
+    .delivery-item p { font-size: 0.85rem; color: #555; margin-top: 2px; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; color: white; margin-top: 5px; }
+    .badge-direta { background-color: #28a745; }
+    .badge-armario { background-color: #17a2b8; }
+    .badge-porter { background-color: #ffc107; color: #000; }
+    .photo-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-top: 10px; display: none; }
+  </style>
+</head>
+<body>
+
+  <header>🚚 J&T Express Manager</header>
+
+  <div class="container">
+    <div class="card">
+      <h2>📦 Registrar Nova Entrega</h2>
+      <form id="deliveryForm">
+        <label for="address">Endereço / Prédio / Apto:</label>
+        <input type="text" id="address" placeholder="Ex: R. das Flores, 123 - Apto 402" required>
+
+        <label for="type">Tipo de Entrega:</label>
+        <select id="type">
+          <option value="Direta">Direct to Resident / Shop</option>
+          <option value="Armário">Electronic Locker</option>
+          <option value="Porter">Porter / Portaria</option>
+        </select>
+
+        <label for="photoInput">📷 Tirar Foto do Pacote / Comprovante:</label>
+        <input type="file" id="photoInput" accept="image/*" capture="environment">
+        <img id="photoPreview" class="photo-preview" alt="Preview da Foto">
+
+        <button type="submit" class="btn-primary">Confirmar e Enviar</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>📋 Entregas do Dia (Ao Vivo)</h2>
+      <div id="deliveryList">Carregando entregas...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDxkRMpo2seMwa8l30Pi8tyKpZBgpUSNnI",
+      authDomain: "jt-express-app.firebaseapp.com",
+      projectId: "jt-express-app",
+      storageBucket: "jt-express-app.firebasestorage.app",
+      messagingSenderId: "90950378709",
+      appId: "1:90950378709:web:9f9fee6084aa99de77ae5c",
+      databaseURL: "https://jt-express-app-default-rtdb.firebaseio.com"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const deliveriesRef = ref(db, 'deliveries');
+
+    let currentPhotoBase64 = "";
+
+    document.getElementById('photoInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          currentPhotoBase64 = evt.target.result;
+          const img = document.getElementById('photoPreview');
+          img.src = currentPhotoBase64;
+          img.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    document.getElementById('deliveryForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const address = document.getElementById('address').value;
+      const type = document.getElementById('type').value;
+
+      push(deliveriesRef, {
+        address: address,
+        type: type,
+        photo: currentPhotoBase64,
+        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      }).then(() => {
+        document.getElementById('deliveryForm').reset();
+        document.getElementById('photoPreview').style.display = 'none';
+        currentPhotoBase64 = "";
+        alert("Entrega registrada com sucesso!");
+      }).catch((err) => {
+        alert("Erro ao registrar: " + err.message);
+      });
+    });
+
+    onValue(deliveriesRef, (snapshot) => {
+      const listDiv = document.getElementById('deliveryList');
+      listDiv.innerHTML = "";
+      const data = snapshot.val();
+      if (!data) {
+        listDiv.innerHTML = "<p style='color: #888;'>Nenhuma entrega registrada hoje.</p>";
+        return;
+      }
+
+      Object.values(data).reverse().forEach(item => {
+        let badgeClass = 'badge-direta';
+        if (item.type === 'Armário') badgeClass = 'badge-armario';
+        if (item.type === 'Porter') badgeClass = 'badge-porter';
+
+        let imgHtml = item.photo ? `<img src="${item.photo}" style="width:100%; border-radius:6px; margin-top:8px;">` : '';
+
+        listDiv.innerHTML += `
+          <div class="delivery-item">
+            <h3>${item.address}</h3>
+            <p>Horário: ${item.timestamp}</p>
+            <span class="badge ${badgeClass}">${item.type}</span>
+            ${imgHtml}
+          </div>
+        `;
+      });
+    });
+  </script>
+</body>
+</html>
